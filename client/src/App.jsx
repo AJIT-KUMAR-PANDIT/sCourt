@@ -1,145 +1,100 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import axios from "axios";
 
 const App = () => {
   const [query, setQuery] = useState("");
-  const [response, setResponse] = useState("");
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [citations, setCitations] = useState([]);
   const [error, setError] = useState("");
 
-  // Function to handle the search request to the backend API
   const handleSearch = async () => {
-    if (!query) return;
+    if (!query) {
+      setError("Please enter a search query");
+      return;
+    }
 
     setLoading(true);
     setError("");
-    setResponse("");
-    setCitations([]);
-
     try {
-      const res = await fetch("http://localhost:3000/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
+      const response = await axios.post("http://localhost:3000/search", {
+        query,
       });
-      const data = await res.json();
-
-      if (data.results) {
-        setResponse(data.results.text); // Assuming response.text contains the legal document's summary or full content
-        setCitations(data.results.citations); // Assuming citations are part of the response
-      }
+      const data = response.data.results;
+      setResults(data);
     } catch (err) {
-      setError("Something went wrong. Please try again later.");
+      console.error(err);
+      setError("An error occurred while fetching the search results");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg p-6 space-y-4">
-        <h1 className="text-3xl font-bold text-center text-indigo-600">
-          Legal Document Search
-        </h1>
-
-        {/* Input Section */}
-        <div className="flex flex-col space-y-2">
-          <input
-            type="text"
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-            placeholder="Search for legal documents..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button
-            onClick={handleSearch}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            Search
-          </button>
-        </div>
-
-        {/* Loading Indicator */}
-        {loading && (
-          <div className="flex justify-center py-4">
-            <div className="w-16 h-16 border-t-4 border-indigo-600 border-solid rounded-full animate-spin"></div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="text-red-500 text-center">
-            <p>{error}</p>
-          </div>
-        )}
-
-        {/* Response Display */}
-        {!loading && response && (
-          <div className="space-y-4">
-            <div className="bg-indigo-50 p-4 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-700">
-                Search Results:
-              </h3>
-              <p className="text-gray-800">{response}</p>
-            </div>
-
-            {/* Citations */}
-            {citations.length > 0 && (
-              <div className="bg-white p-4 rounded-lg shadow-sm space-y-2">
-                <h4 className="text-lg font-medium text-gray-700">
-                  Citations:
-                </h4>
-                <ul className="list-disc pl-5">
-                  {citations.map((citation, index) => (
-                    <li key={index} className="text-sm text-gray-500">
-                      <span className="font-bold">[{index + 1}]</span>{" "}
-                      {citation}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Example of Full Document Request */}
-        <div className="mt-6 bg-indigo-50 p-4 rounded-lg shadow-sm">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Request Full Document:
-          </h3>
-          <input
-            type="text"
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-            placeholder="Enter document title to view full content"
-          />
-          <button
-            onClick={handleSearch} // Adjust this to fetch the full document
-            className="mt-2 w-full bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            View Full Document
-          </button>
-        </div>
-
-        {/* Example of Document Fragments Request */}
-        <div className="mt-6 bg-indigo-50 p-4 rounded-lg shadow-sm">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Request Document Fragments:
-          </h3>
-          <input
-            type="text"
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-            placeholder="Enter document title and fragment query"
-          />
-          <button
-            onClick={handleSearch} // Adjust this to fetch document fragments
-            className="mt-2 w-full bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            Get Fragments
-          </button>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-center mb-8">
+        <input
+          type="text"
+          placeholder="Search for legal documents..."
+          className="w-1/2 p-4 border rounded-lg shadow-md"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button
+          onClick={handleSearch}
+          className="ml-4 p-4 bg-blue-500 text-white rounded-lg"
+        >
+          Search
+        </button>
       </div>
+
+      {loading && <div className="text-center text-lg">Searching...</div>}
+      {error && <div className="text-center text-red-500">{error}</div>}
+
+      {results.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <h2 className="text-2xl font-semibold">Search Results</h2>
+          </div>
+
+          {/* Display first result summary */}
+          <div className="bg-gray-100 p-6 mb-4 rounded-lg shadow-md">
+            <h3 className="text-xl font-semibold">Summary</h3>
+            <p>{results[0].text}</p>
+            <div className="mt-2 text-sm text-gray-500">
+              <strong>Source:</strong> {results[0].source}
+            </div>
+            <div className="mt-2 text-sm text-gray-500">
+              <strong>Citations:</strong> {results[0].citations.join(", ")}
+            </div>
+          </div>
+
+          {/* List of results */}
+          <div>
+            {results.slice(1).map((result, index) => (
+              <div
+                key={index}
+                className="bg-white p-4 mb-4 rounded-lg shadow-md"
+              >
+                <a
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {result.url}
+                </a>
+                <p className="mt-2">{result.summary}</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <strong>Source:</strong> {result.source}
+                </div>
+                <div className="mt-2 text-sm text-gray-500">
+                  <strong>Citations:</strong> {result.citations.join(", ")}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -24,6 +24,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public")); // Serve static frontend files
 
+// Helper function to get available sites from the environment variable
+const getAvailableSites = () => {
+  const sites = process.env.SEARCH_SITES;
+  return sites ? sites.split(",") : [];
+};
+
+// Function to validate if the site is available
+const isValidSite = (site) => {
+  const availableSites = getAvailableSites();
+  return availableSites.includes(site);
+};
+
 // Helper function to interact with Groq
 const queryGroq = async (prompt, maxTokens = 300, temperature = 0.7) => {
   try {
@@ -44,7 +56,6 @@ const queryGroq = async (prompt, maxTokens = 300, temperature = 0.7) => {
 
 // Helper function to add citation to results
 const addCitations = (text) => {
-  // Placeholder for actual citation parsing. You can adjust this as needed.
   const citationPattern = /\[\d+\]/g; // Simple pattern to match citations like [1], [2], etc.
   const citations = text.match(citationPattern) || [];
   return { text, citations };
@@ -52,13 +63,23 @@ const addCitations = (text) => {
 
 // Search Endpoint
 app.post("/search", async (req, res) => {
-  const { query } = req.body;
+  const { query, site } = req.body; // Allow site parameter to specify which site to search
 
   if (!query) {
     return res.status(400).json({ message: "Search query is required" });
   }
 
-  const prompt = `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries and citations.`; // Added citation request
+  // Check if the provided site is valid
+  if (site && !isValidSite(site)) {
+    return res
+      .status(400)
+      .json({ message: `Search is not allowed on site: ${site}` });
+  }
+
+  // If no site is provided, perform search on all allowed sites
+  const prompt = site
+    ? `Search for legal documents related to "${query}" on ${site} and provide a brief list of the most relevant results with short summaries and citations.`
+    : `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries and citations.`;
 
   try {
     const result = await queryGroq(prompt, 500);
