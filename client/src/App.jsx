@@ -3,7 +3,7 @@ import axios from "axios";
 
 const App = () => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState(null);
+  const [searchData, setSearchData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,9 +22,8 @@ const App = () => {
         query,
       });
 
-      // Handle the specific data structure you described
-      const data = response.data;
-      setResults(data);
+      // Set the entire search data response
+      setSearchData(response.data);
     } catch (err) {
       console.error(err);
       setError("An error occurred while fetching the search results");
@@ -42,7 +41,7 @@ const App = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {console.log(results)}
+      {console.log(searchData)}
       <div className="flex justify-center mb-8">
         <input
           type="text"
@@ -63,7 +62,7 @@ const App = () => {
 
       {error && <div className="text-center text-red-500">{error}</div>}
 
-      {results && (
+      {searchData && (
         <div>
           <div className="mb-4">
             <h2 className="text-2xl font-semibold">Search Results</h2>
@@ -72,27 +71,41 @@ const App = () => {
           {/* Main result display */}
           <div className="bg-gray-100 p-6 mb-4 rounded-lg shadow-md">
             <h3 className="text-xl font-semibold">Main Result</h3>
-            <p>{results.results.text}</p>
+            <p>{searchData.results.text}</p>
             <div className="mt-2 text-sm text-gray-500">
               <strong>Citations:</strong>{" "}
-              {renderCitations(results.results.citations)}
+              {renderCitations(searchData.results.citations)}
             </div>
           </div>
 
-          {/* Additional context if needed */}
-          {results.length && (
+          {/* Metadata section */}
+          {searchData.metadata && searchData.metadata.length > 0 && (
             <div>
-              <h3 className="text-xl font-semibold mb-4">Additional Results</h3>
-              {results.map((result, index) => (
+              <h3 className="text-xl font-semibold mb-4">
+                Additional Information
+              </h3>
+              {searchData.metadata.map((item, index) => (
                 <div
                   key={index}
                   className="bg-white p-4 mb-4 rounded-lg shadow-md"
                 >
-                  <p>{result.results.text}</p>
-                  <div className="mt-2 text-sm text-gray-500">
-                    <strong>Citations:</strong>{" "}
-                    {renderCitations(result.citations)}
-                  </div>
+                  <p>{item.title || "No additional details"}</p>
+                  <br />
+                  <p>
+                    <a
+                      href={item.url.slice(0, -1)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Link: {item.url.slice(0, -1)}
+                    </a>
+                  </p>
+                  {item.citations && (
+                    <div className="mt-2 text-sm text-gray-500">
+                      <strong>Citations:</strong>{" "}
+                      {renderCitations(item.citations)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
