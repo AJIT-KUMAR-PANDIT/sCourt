@@ -28,7 +28,7 @@ app.use(express.static("public")); // Serve static frontend files
 const queryGroq = async (prompt, maxTokens = 300, temperature = 0.7) => {
   try {
     const payload = {
-      model: "llama3-8b-8192", // Specify the model (update with the correct model if needed)   mixtral-8x7b-32768
+      model: "llama3-8b-8192", // Specify the model (update with the correct model if needed) mixtral-8x7b-32768
       messages: [{ role: "user", content: prompt }],
       max_tokens: maxTokens,
       temperature: temperature,
@@ -42,6 +42,14 @@ const queryGroq = async (prompt, maxTokens = 300, temperature = 0.7) => {
   }
 };
 
+// Helper function to add citation to results
+const addCitations = (text) => {
+  // Placeholder for actual citation parsing. You can adjust this as needed.
+  const citationPattern = /\[\d+\]/g; // Simple pattern to match citations like [1], [2], etc.
+  const citations = text.match(citationPattern) || [];
+  return { text, citations };
+};
+
 // Search Endpoint
 app.post("/search", async (req, res) => {
   const { query } = req.body;
@@ -50,11 +58,12 @@ app.post("/search", async (req, res) => {
     return res.status(400).json({ message: "Search query is required" });
   }
 
-  const prompt = `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries.`;
+  const prompt = `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries and citations.`; // Added citation request
 
   try {
     const result = await queryGroq(prompt, 500);
-    res.json({ results: result });
+    const resultWithCitations = addCitations(result); // Add citations to result
+    res.json({ results: resultWithCitations });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -68,11 +77,12 @@ app.post("/full-document", async (req, res) => {
     return res.status(400).json({ message: "Document title is required" });
   }
 
-  const prompt = `Provide the full content of the legal document titled "${title}".`;
+  const prompt = `Provide the full content of the legal document titled "${title}". Include citations where applicable.`; // Added citation request
 
   try {
     const fullText = await queryGroq(prompt, 1000);
-    res.json({ fullText });
+    const fullTextWithCitations = addCitations(fullText); // Add citations to full document
+    res.json({ fullText: fullTextWithCitations });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -88,11 +98,12 @@ app.post("/document-fragments", async (req, res) => {
       .json({ message: "Document title and fragment query are required" });
   }
 
-  const prompt = `From the document titled "${title}", extract the parts relevant to "${query}".`;
+  const prompt = `From the document titled "${title}", extract the parts relevant to "${query}". Include citations for each relevant fragment.`; // Added citation request
 
   try {
     const fragments = await queryGroq(prompt, 500);
-    res.json({ fragments });
+    const fragmentsWithCitations = addCitations(fragments); // Add citations to fragments
+    res.json({ fragments: fragmentsWithCitations });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -106,11 +117,12 @@ app.post("/document-metadata", async (req, res) => {
     return res.status(400).json({ message: "Document title is required" });
   }
 
-  const prompt = `Provide metadata for the legal document titled "${title}". Include details like author, date, court, and case number.`;
+  const prompt = `Provide metadata for the legal document titled "${title}". Include details like author, date, court, case number, and any relevant citations.`; // Added citation request
 
   try {
     const metadata = await queryGroq(prompt, 300);
-    res.json({ metadata });
+    const metadataWithCitations = addCitations(metadata); // Add citations to metadata
+    res.json({ metadata: metadataWithCitations });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
