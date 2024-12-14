@@ -61,6 +61,23 @@ const addCitations = (text) => {
   return { text, citations };
 };
 
+// Helper function to extract metadata such as title and links
+const extractMetadata = (text) => {
+  const metadata = [];
+  const urlPattern = /https?:\/\/[^\s]+/g; // Extract URLs
+  const titlePattern = /(?:Title:|Document Title:)\s*(.*)/g; // Example title pattern
+
+  const urls = text.match(urlPattern) || [];
+  const titles = text.match(titlePattern) || [];
+
+  // Combine extracted URLs and titles into metadata
+  for (let i = 0; i < Math.min(urls.length, titles.length); i++) {
+    metadata.push({ title: titles[i] || "Untitled", url: urls[i] });
+  }
+
+  return metadata;
+};
+
 // Search Endpoint
 app.post("/search", async (req, res) => {
   const { query, site } = req.body; // Allow site parameter to specify which site to search
@@ -78,13 +95,18 @@ app.post("/search", async (req, res) => {
 
   // If no site is provided, perform search on all allowed sites
   const prompt = site
-    ? `Search for legal documents related to "${query}" on ${site} and provide a brief list of the most relevant results with short summaries and citations.`
-    : `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries and citations.`;
+    ? `Search for legal documents related to "${query}" on ${site} and provide a brief list of the most relevant results with short summaries, citations, titles, and links.`
+    : `Search for legal documents related to "${query}" and provide a brief list of the most relevant results with short summaries, citations, titles, and links.`;
 
   try {
     const result = await queryGroq(prompt, 500);
     const resultWithCitations = addCitations(result); // Add citations to result
-    res.json({ results: resultWithCitations });
+
+    // Extract metadata (URLs and Titles) from the Groq result
+    const metadata = extractMetadata(resultWithCitations.text);
+
+    // Return results along with citations and metadata
+    res.json({ results: resultWithCitations, metadata });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
