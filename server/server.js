@@ -40,7 +40,7 @@ const isValidSite = (site) => {
 const queryGroq = async (prompt, maxTokens = 300, temperature = 0.7) => {
   try {
     const payload = {
-      model: "llama3-8b-8192", // Specify the model (update with the correct model if needed) mixtral-8x7b-32768
+      model: "llama3-8b-8192", // Specify the model (update with the correct model if needed)
       messages: [{ role: "user", content: prompt }],
       max_tokens: maxTokens,
       temperature: temperature,
