@@ -91,7 +91,7 @@ const App = () => {
                   <p>{result.results.text}</p>
                   <div className="mt-2 text-sm text-gray-500">
                     <strong>Citations:</strong>{" "}
-                    {renderCitations(result.results.citations)}
+                    {renderCitations(result.citations)}
                   </div>
                 </div>
               ))}
